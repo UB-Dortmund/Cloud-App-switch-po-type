@@ -1,104 +1,170 @@
-import { Subscription } from 'rxjs';
-import { ToastrService } from 'ngx-toastr';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { catchError, finalize, map } from "rxjs/operators";
+import { MatSelect } from "@angular/material/select";
+import { Component, ViewChild, OnInit, OnDestroy } from "@angular/core";
 import {
-  CloudAppRestService, CloudAppEventsService, Request, HttpMethod,
-  Entity, PageInfo, RestErrorResponse
-} from '@exlibris/exl-cloudapp-angular-lib';
+  CloudAppRestService,
+  CloudAppEventsService,
+  PageInfo,
+  Entity,
+  HttpMethod,
+} from "@exlibris/exl-cloudapp-angular-lib";
+import { Request as ExRequest } from "@exlibris/exl-cloudapp-angular-lib";
+import { EMPTY, forkJoin, Observable, Subscription } from "rxjs";
+import { Constants } from "../constants";
+import { ToastrService } from "ngx-toastr";
 
+export interface CancelReason {
+  code: string;
+  description: string;
+}
 @Component({
-  selector: 'app-main',
-  templateUrl: './main.component.html',
-  styleUrls: ['./main.component.scss']
+  selector: "app-main",
+  templateUrl: "./main.component.html",
+  styleUrls: ["./main.component.scss"],
 })
 export class MainComponent implements OnInit, OnDestroy {
-
-  private pageLoad$: Subscription;
-  pageEntities: Entity[];
-  private _apiResult: any;
-
-  hasApiResult: boolean = false;
-  loading = false;
-
-  constructor(private restService: CloudAppRestService,
-    private eventsService: CloudAppEventsService,
-    private toastr: ToastrService) { }
-
+  @ViewChild(MatSelect, { static: false }) selectDrop: MatSelect;
+  pageLoad$: Subscription;
+  loading: boolean = false;
+  physicalPOLs: POL.Object[];
+  cancelationQueue: POL.Object[];
+  cancelReasons: CancelReason[] = [];
+  constructor(
+    private eventService: CloudAppEventsService,
+    private restService: CloudAppRestService,
+    private toastr: ToastrService
+  ) {}
   ngOnInit() {
-    this.pageLoad$ = this.eventsService.onPageLoad(this.onPageLoad);
+    this.pageLoad$ = this.eventService.onPageLoad(this.onPageLoad);
+    this.loading = true;
+    this.restService.call("/conf/code-tables/POLineCancellationReasons").subscribe({
+      next: (res) => {
+        if (res && res.row) {
+          res.row.forEach((row) => {
+            this.cancelReasons.push({
+              code: row.code,
+              description: row.description,
+            } as CancelReason);
+          });
+        }
+      },
+      error: (err) => {
+        this.toastr.error(err);
+      },
+      complete: () => (this.loading = false),
+    });
   }
-
-  ngOnDestroy(): void {
-    this.pageLoad$.unsubscribe();
-  }
-
-  get apiResult() {
-    return this._apiResult;
-  }
-
-  set apiResult(result: any) {
-    this._apiResult = result;
-    this.hasApiResult = result && Object.keys(result).length > 0;
+  ngOnDestroy() {
+    if (this.pageLoad$) {
+      this.pageLoad$.unsubscribe();
+    }
   }
 
   onPageLoad = (pageInfo: PageInfo) => {
-    this.pageEntities = pageInfo.entities;
-    if ((pageInfo.entities || []).length == 1) {
-      const entity = pageInfo.entities[0];
-      this.restService.call(entity.link).subscribe(result => this.apiResult = result);
-    } else {
-      this.apiResult = {};
-    }
-  }
-
-  update(value: any) {
-    this.loading = true;
-    let requestBody = this.tryParseJson(value);
-    if (!requestBody) {
-      this.loading = false;
-      return this.toastr.error('Failed to parse json');
-    }
-    this.sendUpdateRequest(requestBody);
-  }
-
-  refreshPage = () => {
-    this.loading = true;
-    this.eventsService.refreshPage().subscribe({
-      next: () => this.toastr.success('Success!'),
-      error: e => {
-        console.error(e);
-        this.toastr.error('Failed to refresh page');
-      },
-      complete: () => this.loading = false
-    });
-  }
-
-  private sendUpdateRequest(requestBody: any) {
-    let request: Request = {
-      url: this.pageEntities[0].link,
-      method: HttpMethod.PUT,
-      requestBody
-    };
-    this.restService.call(request).subscribe({
-      next: result => {
-        this.apiResult = result;
-        this.refreshPage();
-      },
-      error: (e: RestErrorResponse) => {
-        this.toastr.error('Failed to update data');
-        console.error(e);
-        this.loading = false;
+    if (pageInfo.entities && pageInfo.entities.length > 0) {
+      this.loading = true;
+      this.physicalPOLs = [];
+      this.cancelationQueue = [];
+      for (let entity of pageInfo.entities) {
+        this.restService.call(entity?.link).subscribe((res: POL.Object) => {
+          if (Constants.physicalTypeSet.has(res.type.value)) {
+            this.physicalPOLs.push(res);
+          }
+          this.loading = false;
+        });
       }
+    }
+  };
+
+  switchToElectronic() {
+    let polToProcess: POL.Object[] = [];
+    let observables: Observable<any>[] = [];
+    for (let option of this.selectDrop.selected as any[]) {
+      polToProcess.push(option.value);
+    }
+    for (let physicalPol of polToProcess) {
+      if (physicalPol.status && physicalPol.status.value in Constants.forbiddenStatuses) {
+        //TODO Add nice error message
+        this.toastr.error("Error");
+      } else {
+        //TODO Manipulate object
+        this.physicalToElectronic(physicalPol, observables);
+      }
+    }
+    if (observables.length > 0) {
+      forkJoin(observables).subscribe({
+        next: (res) => {
+          res = res as { value: POL.Object; oldPol: POL.Object }[];
+          for (let result of res) {
+            if (result && result.value) {
+              this.toastr.success(
+                `Successfully created ${result.value.number} ,With type ${result.value.type.desc}`
+              );
+              this.cancelationQueue.push(result.oldPol);
+            }
+          }
+          this.eventService.refreshPage().subscribe(() => null);
+        },
+      });
+    }
+  }
+
+  onCancel(
+    cancelIdx: number,
+    reason: string,
+    comment: string,
+    override: boolean,
+    informVendor: boolean
+  ) {
+    let poItem = this.cancelationQueue[cancelIdx];
+    let req: ExRequest = {
+      url: `/almaws/v1/acq/po-lines/${poItem.number}`,
+      method: HttpMethod.DELETE,
+      queryParams: {
+        reason: reason,
+        comment: comment,
+        override: override,
+        inform_vendor: informVendor,
+      },
+    };
+    this.restService.call(req).subscribe({
+      next: (res) => {
+        this.toastr.success(`Successfully canceled ${poItem.number}`);
+        this.cancelationQueue.splice(cancelIdx, 1);
+      },
+      error: (err) => {
+        this.toastr.error(`Error: ${err.message}`); //TODO
+      },
     });
   }
-
-  private tryParseJson(value: any) {
-    try {
-      return JSON.parse(value);
-    } catch (e) {
-      console.error(e);
-    }
-    return undefined;
+  onDeleteCancel(cancelIdx: number) {
+    this.cancelationQueue.splice(cancelIdx, 1);
   }
 
+  ifSelected = (): boolean =>
+    !(this.selectDrop && this.selectDrop.selected && (this.selectDrop.selected as []).length !== 0);
+
+  private physicalToElectronic(physicalPol: POL.Object, observables: Observable<any>[]) {
+    let newPol: POL.Object = { ...physicalPol }; //Deep Copy
+    newPol.type = Constants.typeMap.get(physicalPol.type.value);
+    newPol.number = null;
+    //Creates observable
+    let req: ExRequest = {
+      url: "/almaws/v1/acq/po-lines",
+      requestBody: newPol,
+      method: HttpMethod.POST,
+    };
+    observables.push(
+      this.restService.call(req).pipe(
+        map((value) => {
+          return { value, oldPol: physicalPol }; // Returns the oldPol to add cancelation
+        }),
+        catchError((err) => {
+          //TODO Nice error message
+          this.toastr.error(err.message);
+          return EMPTY;
+        })
+      )
+    );
+  }
 }
