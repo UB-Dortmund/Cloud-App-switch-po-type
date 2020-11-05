@@ -10,23 +10,26 @@ import { AppComponent } from "./app.component";
 import { AppRoutingModule } from "./app-routing.module";
 import { MainComponent } from "./main/main.component";
 import { MatSelectModule } from "@angular/material/select";
-import { CancelComponent } from './cancel/cancel.component';
+import { FormsModule } from "@angular/forms";
+import { HelpComponent } from './help/help.component';
+import { ConfigComponent } from './config/config.component';
 
 export function getToastrModule() {
   return ToastrModule.forRoot({
     positionClass: "toast-top-right",
-    timeOut: 2000,
+    timeOut: 999999,
   });
 }
 
 @NgModule({
-  declarations: [AppComponent, MainComponent, CancelComponent],
+  declarations: [AppComponent, MainComponent, HelpComponent, ConfigComponent],
   imports: [
     MaterialModule,
     MatSelectModule,
     MatButtonModule,
     BrowserModule,
     BrowserAnimationsModule,
+    FormsModule,
     AppRoutingModule,
     HttpClientModule,
     getTranslateModule(),

@@ -1,31 +1,25 @@
-<div class="full-width">
-  <p>Please select physical POL to transform:</p>
-  <mat-form-field appearance="fill">
-    <mat-label>Physical PO</mat-label>
-    <mat-select multiple #physicalSelect>
-      <mat-option *ngFor="let po of physicalPOLs" [value]="po">{{ po.number }}</mat-option>
-    </mat-select>
-  </mat-form-field>
-  <button
-    mat-stroked-button
-    color="primary"
-    [disabled]="ifSelected()"
-    (click)="switchToElectronic()"
-  >
-    Transform to Electronic
-  </button>
-  <hr />
-</div>
-<ng-container class="mat-card-box" *ngFor="let cancelPo of cancelationQueue; index as idx">
-  <mat-card (click)="(null)">
-    <mat-card-header>
-      <mat-card-title>Cancel {{ cancelPo.number }}</mat-card-title>
-      <mat-card-subtitle>{{ cancelPo.type.desc ? cancelPo.type.desc : "" }}</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
+<div [hidden]="loading">
+  <ng-container *ngIf="isPol; else noPOL">
+    <form #form="ngForm">
+      <div class="full-width">
+        <p>Please select physical POL to transform:</p>
+        <mat-form-field appearance="standard" >
+          <mat-label>Physical PO</mat-label>
+          <mat-select multiple #physicalSelect required>
+            <mat-option  *ngFor="let po of physicalPOLs" [value]="po">{{ po.number }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>  
       <mat-form-field appearance="standard" [style.width.%]="100">
         <mat-label>Please choose cancelation reason</mat-label>
-        <mat-select placeholder="Cancel reason" #cancelReason id="cancelReason">
+        <mat-select
+          placeholder="Cancel reason"
+          #cancelReason
+          id="cancelReason"
+          name="reason"
+          [(ngModel)]="selectedReason"
+          required
+        >
           <mat-option *ngFor="let cReason of cancelReasons" [value]="cReason">{{
             cReason.description
           }}</mat-option>
@@ -33,28 +27,47 @@
       </mat-form-field>
       <mat-form-field appearance="standard" [style.width.%]="100">
         <mat-label>Add custom comment (Optional)</mat-label>
-        <input type="text" matInput #cancelCustom />
+        <input name="comment" ngModel type="text" matInput #cancelCustom />
       </mat-form-field>
       <div class="toggle-options">
-        <mat-slide-toggle color="primary" style="margin-right: 5px" #override
+        <mat-slide-toggle
+          name="override"
+          ngModel
+          (change)="onChangeSettings()"
+          color="primary"
+          style="margin-right: 5px"
+          #override
+          [(ngModel)]="storeSettings.override"
           >Override</mat-slide-toggle
         >
-        <mat-slide-toggle color="primary" #informVendor>Inform vendor</mat-slide-toggle>
+        <mat-slide-toggle
+          (change)="onChangeSettings()"
+          name="inform_vendor"
+          ngModel
+          color="primary"
+          [(ngModel)]="storeSettings.inform_vendor"
+          #informVendor
+          >Inform vendor</mat-slide-toggle
+        >
       </div>
       <br />
-      <button
-        mat-stroked-button
-        (click)="
-          onCancel(idx, cancelReason.value.code, cancelCustom.value, override.checked, informVendor.checked)
-        "
-        color="primary"
-        style="margin-right: 5px"
-        [disabled]="!cancelReason.selected"
-      >
-        Yes
-      </button>
-      <button mat-stroked-button (click)="onDeleteCancel(idx)" color="primary">No</button>
-    </mat-card-content>
-  </mat-card>
-  <hr>
-</ng-container>
+      <div class="full-width">
+        <button
+          mat-stroked-button
+          color="primary"
+          type="button"
+          [disabled]="ifSelected()"
+          (click)="switchToElectronic()"
+        >
+          Transform to Electronic
+        </button>
+      </div>
+    </form>
+  </ng-container>
+  <ng-template #noPOL>
+    <p>Please navigate to page with physical purchase order lines</p>
+  </ng-template>
+</div>
+<div class="center" *ngIf="loading" #loading_spinner>
+  <mat-progress-spinner mode="indeterminate" diameter="50"> </mat-progress-spinner>
+</div>

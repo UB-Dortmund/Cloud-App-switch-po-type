@@ -5,17 +5,22 @@ import {
   CloudAppRestService,
   CloudAppEventsService,
   PageInfo,
-  Entity,
   HttpMethod,
+  CloudAppStoreService,
 } from "@exlibris/exl-cloudapp-angular-lib";
 import { Request as ExRequest } from "@exlibris/exl-cloudapp-angular-lib";
-import { EMPTY, forkJoin, Observable, Subscription } from "rxjs";
+import { EMPTY, forkJoin, observable, Observable, Subscription } from "rxjs";
 import { Constants } from "../constants";
 import { ToastrService } from "ngx-toastr";
-
+import { NgForm } from "@angular/forms";
+import { MatOption } from "@angular/material/core";
 export interface CancelReason {
   code: string;
   description: string;
+}
+class StoreSettings {
+  override: boolean = false;
+  inform_vendor: boolean = false;
 }
 @Component({
   selector: "app-main",
@@ -24,17 +29,27 @@ export interface CancelReason {
 })
 export class MainComponent implements OnInit, OnDestroy {
   @ViewChild(MatSelect, { static: false }) selectDrop: MatSelect;
+  @ViewChild(NgForm, { static: false }) form: NgForm;
+  storeSettings = new StoreSettings();
   pageLoad$: Subscription;
   loading: boolean = false;
   physicalPOLs: POL.Object[];
-  cancelationQueue: POL.Object[];
+  cancelationQueue: { value: POL.Object; oldNum: string }[] = [];
   cancelReasons: CancelReason[] = [];
+  selectedReason: CancelReason;
+
   constructor(
     private eventService: CloudAppEventsService,
     private restService: CloudAppRestService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private storeService: CloudAppStoreService
   ) {}
   ngOnInit() {
+    this.storeService.get("settings").subscribe((res) => {
+      if (res && Object.keys(res).length > 0) {
+        this.storeSettings = res;
+      }
+    });
     this.pageLoad$ = this.eventService.onPageLoad(this.onPageLoad);
     this.loading = true;
     this.restService.call("/conf/code-tables/POLineCancellationReasons").subscribe({
@@ -47,11 +62,11 @@ export class MainComponent implements OnInit, OnDestroy {
             } as CancelReason);
           });
         }
+        this.loading = false;
       },
       error: (err) => {
         this.toastr.error(err);
       },
-      complete: () => (this.loading = false),
     });
   }
   ngOnDestroy() {
@@ -60,8 +75,17 @@ export class MainComponent implements OnInit, OnDestroy {
     }
   }
 
+  get isPol() {
+    return this.physicalPOLs && this.physicalPOLs.length !== 0;
+  }
+
+  onChangeSettings() {
+    this.storeService
+      .set("settings", this.storeSettings)
+      .subscribe(() => console.log("Updated Settings"));
+  }
   onPageLoad = (pageInfo: PageInfo) => {
-    if (pageInfo.entities && pageInfo.entities.length > 0) {
+    if (pageInfo && pageInfo.entities && pageInfo.entities.length > 0) {
       this.loading = true;
       this.physicalPOLs = [];
       this.cancelationQueue = [];
@@ -75,78 +99,54 @@ export class MainComponent implements OnInit, OnDestroy {
       }
     }
   };
-
   switchToElectronic() {
+    this.loading = true;
     let polToProcess: POL.Object[] = [];
     let observables: Observable<any>[] = [];
     for (let option of this.selectDrop.selected as any[]) {
       polToProcess.push(option.value);
     }
     for (let physicalPol of polToProcess) {
-      if (physicalPol.status && physicalPol.status.value in Constants.forbiddenStatuses) {
+      if (physicalPol.status && physicalPol.status.value in Constants.allowedStatuses) {
         //TODO Add nice error message
         this.toastr.error("Error");
       } else {
-        //TODO Manipulate object
-        this.physicalToElectronic(physicalPol, observables);
+        physicalPol ? this.physicalToElectronic(physicalPol, observables) : null;
       }
     }
     if (observables.length > 0) {
       forkJoin(observables).subscribe({
         next: (res) => {
+          console.log("result from observ", res);
           res = res as { value: POL.Object; oldPol: POL.Object }[];
           for (let result of res) {
             if (result && result.value) {
               this.toastr.success(
                 `Successfully created ${result.value.number} ,With type ${result.value.type.desc}`
               );
-              this.cancelationQueue.push(result.oldPol);
+              this.cancelationQueue.push({ value: result.oldPol, oldNum: result.value.number });
             }
           }
-          this.eventService.refreshPage().subscribe(() => null);
+          this.cancelAll();
         },
       });
+    } else {
+      this.loading = false;
     }
   }
 
-  onCancel(
-    cancelIdx: number,
-    reason: string,
-    comment: string,
-    override: boolean,
-    informVendor: boolean
-  ) {
-    let poItem = this.cancelationQueue[cancelIdx];
-    let req: ExRequest = {
-      url: `/almaws/v1/acq/po-lines/${poItem.number}`,
-      method: HttpMethod.DELETE,
-      queryParams: {
-        reason: reason,
-        comment: comment,
-        override: override,
-        inform_vendor: informVendor,
-      },
-    };
-    this.restService.call(req).subscribe({
-      next: (res) => {
-        this.toastr.success(`Successfully canceled ${poItem.number}`);
-        this.cancelationQueue.splice(cancelIdx, 1);
-      },
-      error: (err) => {
-        this.toastr.error(`Error: ${err.message}`); //TODO
-      },
-    });
-  }
-  onDeleteCancel(cancelIdx: number) {
-    this.cancelationQueue.splice(cancelIdx, 1);
-  }
-
   ifSelected = (): boolean =>
-    !(this.selectDrop && this.selectDrop.selected && (this.selectDrop.selected as []).length !== 0);
+    !(
+      this.selectDrop &&
+      this.selectDrop.selected &&
+      (this.selectDrop.selected as []).length !== 0
+    ) || !this.selectedReason;
 
   private physicalToElectronic(physicalPol: POL.Object, observables: Observable<any>[]) {
-    let newPol: POL.Object = { ...physicalPol }; //Deep Copy
-    newPol.type = Constants.typeMap.get(physicalPol.type.value);
+    let newPol: POL.Object = JSON.parse(JSON.stringify(physicalPol)); //Deep Copy
+    console.log(newPol);
+    newPol.type.value = Constants.typeMap.get(newPol.type.value);
+    newPol.type.desc = null;
     newPol.number = null;
     //Creates observable
     let req: ExRequest = {
@@ -161,10 +161,49 @@ export class MainComponent implements OnInit, OnDestroy {
         }),
         catchError((err) => {
           //TODO Nice error message
-          this.toastr.error(err.message);
+          this.toastr.error(`Failed to transform .${err.message},${physicalPol.number}`);
           return EMPTY;
         })
       )
     );
+  }
+
+  private cancelAll() {
+    let observables = [];
+
+    console.log("In cancel", this.cancelationQueue, this.form.value);
+
+    for (let poItem of this.cancelationQueue) {
+      let req: ExRequest = {
+        url: `/almaws/v1/acq/po-lines/${poItem.value.number}`,
+        method: HttpMethod.DELETE,
+        queryParams: {
+          reason: this.selectedReason.code,
+          comment: `Replace by ${poItem.oldNum} by Cloud App. ${this.form.value.comment}`,
+          override: this.storeSettings.override,
+          inform_vendor: this.storeSettings.inform_vendor,
+        },
+      };
+      let observable = this.restService.call(req).pipe(
+        map(() => poItem.value),
+        catchError((err) => {
+          //TODO Nice error message
+          this.toastr.error(`Failed to cancel. ${err.message},${poItem.value.number}`);
+          return EMPTY;
+        })
+      );
+      observables.push(observable);
+    }
+    forkJoin(observables).subscribe({
+      next: (res) => {
+        res.forEach((element: POL.Object) => {
+          this.toastr.success(`Successfully canceled ${element.number}`);
+        });
+      },
+      complete: () => {
+        this.loading = false;
+        this.eventService.refreshPage().subscribe(() => null);
+      },
+    });
   }
 }

@@ -48,10 +48,33 @@ table {
 .mat-column-state {
   max-width: 64px;
 }
-
+::ng-deep .mat-select-panel {
+  max-width: 100% !important;
+}
 .mat-column-created {
   max-width: 124px;
 }
 div.full-width > * {
   width: 100%;
+}
+.center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -moz-transform: translateX(-50%) translateY(-50%);
+  -webkit-transform: translateX(-50%) translateY(-50%);
+  transform: translateX(-50%) translateY(-50%);
+}
+::ng-deep .cdk-overlay-pane
+{
+  min-width: 82% !important;
+}
+ 
+::ng-deep .cdk-overlay-container
+{
+  display:inline-block;
+}
+
+::ng-deep .ng-animating .mat-option {
+  margin-right: -32px;
 }
