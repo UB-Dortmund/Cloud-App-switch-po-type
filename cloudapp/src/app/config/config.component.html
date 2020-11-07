@@ -1,1 +1,24 @@
-<p>config works!</p>
+<div class="title">
+  <h1>Configuration</h1>
+
+  <a [routerLink]="['']">
+    <button mat-raised-button color="primary"><mat-icon>arrow_back</mat-icon>Back</button>
+  </a>
+</div>
+<ng-container *ngIf="!loading; else loading_spinner">
+  <div class="full-width">
+    <mat-form-field *ngFor="let pItem of physicalTypes" appearance="standard">
+      <mat-label>{{ pItem }}</mat-label>
+      <mat-select [(ngModel)]="config[pItem]">
+        <mat-option *ngFor="let eItem of electronicTypes" [value]="eItem">{{ eItem }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+  <button mat-stroked-button color="primary" style="margin-right: 5px" (click)="onSave()">
+    Save
+  </button>
+  <button mat-stroked-button color="primary" (click)="onRestoreDef()">Restore Defaults</button>
+</ng-container>
+<div class="center" *ngIf="loading" #loading_spinner>
+  <mat-progress-spinner mode="indeterminate" diameter="50"> </mat-progress-spinner>
+</div>

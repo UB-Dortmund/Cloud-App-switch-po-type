@@ -9,11 +9,10 @@ import {
   CloudAppStoreService,
 } from "@exlibris/exl-cloudapp-angular-lib";
 import { Request as ExRequest } from "@exlibris/exl-cloudapp-angular-lib";
-import { EMPTY, forkJoin, observable, Observable, Subscription } from "rxjs";
+import { EMPTY, forkJoin, Observable, Subscription } from "rxjs";
 import { Constants } from "../constants";
 import { ToastrService } from "ngx-toastr";
 import { NgForm } from "@angular/forms";
-import { MatOption } from "@angular/material/core";
 export interface CancelReason {
   code: string;
   description: string;
@@ -108,8 +107,7 @@ export class MainComponent implements OnInit, OnDestroy {
     }
     for (let physicalPol of polToProcess) {
       if (physicalPol.status && physicalPol.status.value in Constants.allowedStatuses) {
-        //TODO Add nice error message
-        this.toastr.error("Error");
+        this.toastr.error(`Error : Could not transform ${physicalPol.number} with this status`);
       } else {
         physicalPol ? this.physicalToElectronic(physicalPol, observables) : null;
       }
@@ -160,7 +158,6 @@ export class MainComponent implements OnInit, OnDestroy {
           return { value, oldPol: physicalPol }; // Returns the oldPol to add cancelation
         }),
         catchError((err) => {
-          //TODO Nice error message
           this.toastr.error(`Failed to transform .${err.message},${physicalPol.number}`);
           return EMPTY;
         })
@@ -187,7 +184,6 @@ export class MainComponent implements OnInit, OnDestroy {
       let observable = this.restService.call(req).pipe(
         map(() => poItem.value),
         catchError((err) => {
-          //TODO Nice error message
           this.toastr.error(`Failed to cancel. ${err.message},${poItem.value.number}`);
           return EMPTY;
         })

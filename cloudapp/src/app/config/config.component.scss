@@ -1,0 +1,46 @@
+div.title {
+  display: flex;
+  margin-top: 10px;
+}
+
+div.title a {
+  margin-left: auto;
+}
+div.full-width > * {
+  width: 100%;
+}
+.mat-form-field-appearance-legacy.mat-form-field-can-float.mat-form-field-should-float
+  .mat-form-field-label:not(.mat-empty):not(.mat-form-field-empty) {
+  font-weight: bold !important;
+}
+::ng-deep .cdk-overlay-pane {
+  min-width: 82% !important;
+}
+
+::ng-deep .cdk-overlay-container {
+  display: inline-block;
+}
+
+::ng-deep .ng-animating .mat-option {
+  margin-right: -32px;
+}
+::ng-deep .mat-select-panel {
+  max-width: 100% !important;
+}
+.mat-car-box {
+  position: relative;
+  min-height: 200px;
+  max-width: 70%;
+  width: 70%;
+  box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.6), 0 8px 10px 1px rgba(0, 0, 0, 0.42),
+    0 3px 14px 2px rgba(0, 0, 0, 0.36);
+}
+
+.center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -moz-transform: translateX(-50%) translateY(-50%);
+  -webkit-transform: translateX(-50%) translateY(-50%);
+  transform: translateX(-50%) translateY(-50%);
+}
