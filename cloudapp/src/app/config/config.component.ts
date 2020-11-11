@@ -51,8 +51,12 @@ export class ConfigComponent implements OnInit {
           this.config = this.getDefSettings();
         }
       },
-      error: (err) => {},
-      complete: () => (this.loading = false), //TODO Error message ,  loading false
+      error: (err) => {
+        console.error(err);
+        this.toastr.error("There was an error loading the configuration , please try again");
+        this.loading = false;
+      },
+      complete: () => (this.loading = false),
     });
     // this.typeService.getElectronicTypes.subscribe((res) => (this.electronicTypes = res));
     // this.typeService.getPhysicalTypes.subscribe((res) => (this.physicalTypes = res));

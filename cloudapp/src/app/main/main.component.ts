@@ -1,4 +1,4 @@
-import { catchError, finalize, map } from "rxjs/operators";
+import { catchError, finalize, map, tap } from "rxjs/operators";
 import { MatSelect } from "@angular/material/select";
 import { Component, ViewChild, OnInit, OnDestroy } from "@angular/core";
 import {
@@ -49,6 +49,20 @@ export class MainComponent implements OnInit, OnDestroy {
         this.storeSettings = res;
       }
     });
+    //TODO delete its just a test
+    // let req: ExRequest = {
+    //   url:
+    //     "/acq/po-lines/POL-102",
+    //   method: HttpMethod.DELETE,
+    //   queryParams:{reason:'VENDOR_CANCELLED'}
+    // };
+    // this.restService
+    //   .call(req).pipe(tap(()=>console.log('sent request')))
+    //   .subscribe({
+    //     next: (res) => console.log(res, "got response"),
+    //     error: (err) => console.log("got time out error", err),
+    //   });
+
     this.pageLoad$ = this.eventService.onPageLoad(this.onPageLoad);
     this.loading = true;
     this.restService.call("/conf/code-tables/POLineCancellationReasons").subscribe({
@@ -64,6 +78,7 @@ export class MainComponent implements OnInit, OnDestroy {
         this.loading = false;
       },
       error: (err) => {
+        console.error(err);
         this.toastr.error(err);
       },
     });
@@ -176,7 +191,7 @@ export class MainComponent implements OnInit, OnDestroy {
         method: HttpMethod.DELETE,
         queryParams: {
           reason: this.selectedReason.code,
-          comment: `Replace by ${poItem.oldNum} by Cloud App. ${this.form.value.comment}`,
+          comment: `Replaced by ${poItem.oldNum} by Cloud App. ${this.form.value.comment}`,
           override: this.storeSettings.override,
           inform_vendor: this.storeSettings.inform_vendor,
         },
@@ -184,7 +199,10 @@ export class MainComponent implements OnInit, OnDestroy {
       let observable = this.restService.call(req).pipe(
         map(() => poItem.value),
         catchError((err) => {
+          console.error(err);
           this.toastr.error(`Failed to cancel. ${err.message},${poItem.value.number}`);
+          
+
           return EMPTY;
         })
       );
@@ -193,7 +211,9 @@ export class MainComponent implements OnInit, OnDestroy {
     forkJoin(observables).subscribe({
       next: (res) => {
         res.forEach((element: POL.Object) => {
-          this.toastr.success(`Successfully canceled ${element.number}`);
+          if (element && element.number) {
+            this.toastr.success(`Successfully canceled ${element.number}`);
+          }
         });
       },
       complete: () => {
