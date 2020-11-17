@@ -13,12 +13,9 @@ import { EMPTY, forkJoin, Observable, Subscription } from "rxjs";
 import { Constants } from "../constants";
 import { ToastrService } from "ngx-toastr";
 import { NgForm } from "@angular/forms";
-export interface CancelReason {
-  code: string;
-  description: string;
-}
+const CANCEL_REASON = "LIBRARY_CANCELLED";
 class StoreSettings {
-  override: boolean = false;
+  override: boolean = true;
   inform_vendor: boolean = false;
 }
 @Component({
@@ -34,9 +31,6 @@ export class MainComponent implements OnInit, OnDestroy {
   loading: boolean = false;
   physicalPOLs: POL.Object[];
   cancelationQueue: { value: POL.Object; oldNum: string }[] = [];
-  cancelReasons: CancelReason[] = [];
-  selectedReason: CancelReason;
-
   constructor(
     private eventService: CloudAppEventsService,
     private restService: CloudAppRestService,
@@ -44,43 +38,19 @@ export class MainComponent implements OnInit, OnDestroy {
     private storeService: CloudAppStoreService
   ) {}
   ngOnInit() {
-    this.storeService.get("settings").subscribe((res) => {
-      if (res && Object.keys(res).length > 0) {
-        this.storeSettings = res;
-      }
-    });
-    //TODO delete its just a test
-    // let req: ExRequest = {
-    //   url:
-    //     "/acq/po-lines/POL-102",
-    //   method: HttpMethod.DELETE,
-    //   queryParams:{reason:'VENDOR_CANCELLED'}
-    // };
-    // this.restService
-    //   .call(req).pipe(tap(()=>console.log('sent request')))
-    //   .subscribe({
-    //     next: (res) => console.log(res, "got response"),
-    //     error: (err) => console.log("got time out error", err),
-    //   });
-
     this.pageLoad$ = this.eventService.onPageLoad(this.onPageLoad);
     this.loading = true;
-    this.restService.call("/conf/code-tables/POLineCancellationReasons").subscribe({
+    this.storeService.get("settings").subscribe({
       next: (res) => {
-        if (res && res.row) {
-          res.row.forEach((row) => {
-            this.cancelReasons.push({
-              code: row.code,
-              description: row.description,
-            } as CancelReason);
-          });
+        if (res && Object.keys(res).length > 0) {
+          this.storeSettings = res;
         }
-        this.loading = false;
       },
       error: (err) => {
         console.error(err);
-        this.toastr.error(err);
+        this.loading = false;
       },
+      complete: () => (this.loading = false),
     });
   }
   ngOnDestroy() {
@@ -149,11 +119,7 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   ifSelected = (): boolean =>
-    !(
-      this.selectDrop &&
-      this.selectDrop.selected &&
-      (this.selectDrop.selected as []).length !== 0
-    ) || !this.selectedReason;
+    !(this.selectDrop && this.selectDrop.selected && (this.selectDrop.selected as []).length !== 0);
 
   private physicalToElectronic(physicalPol: POL.Object, observables: Observable<any>[]) {
     let newPol: POL.Object = JSON.parse(JSON.stringify(physicalPol)); //Deep Copy
@@ -190,7 +156,7 @@ export class MainComponent implements OnInit, OnDestroy {
         url: `/almaws/v1/acq/po-lines/${poItem.value.number}`,
         method: HttpMethod.DELETE,
         queryParams: {
-          reason: this.selectedReason.code,
+          reason: CANCEL_REASON,
           comment: `Replaced by ${poItem.oldNum} by Cloud App. ${this.form.value.comment}`,
           override: this.storeSettings.override,
           inform_vendor: this.storeSettings.inform_vendor,
@@ -201,7 +167,6 @@ export class MainComponent implements OnInit, OnDestroy {
         catchError((err) => {
           console.error(err);
           this.toastr.error(`Failed to cancel. ${err.message},${poItem.value.number}`);
-          
 
           return EMPTY;
         })

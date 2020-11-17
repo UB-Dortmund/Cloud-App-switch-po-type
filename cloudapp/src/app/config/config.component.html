@@ -8,9 +8,9 @@
 <ng-container *ngIf="!loading; else loading_spinner">
   <div class="full-width">
     <mat-form-field *ngFor="let pItem of physicalTypes" appearance="standard">
-      <mat-label style="font-weight: bold;">{{ pItem }}</mat-label>
-      <mat-select [(ngModel)]="config[pItem]">
-        <mat-option *ngFor="let eItem of electronicTypes" [value]="eItem">{{ eItem }}</mat-option>
+      <mat-label style="font-weight: bold;">{{ pItem.description }}</mat-label>
+      <mat-select [(ngModel)]="config[pItem.code]">
+        <mat-option *ngFor="let eItem of electronicTypes" [value]="eItem.code">{{ eItem.description }}</mat-option>
       </mat-select>
     </mat-form-field>
   </div>

@@ -5,12 +5,12 @@
         <p>Please select physical POL to transform to electronic POL according to configuration:</p>
         <mat-form-field appearance="standard" >
           <mat-label>Physical PO</mat-label>
-          <mat-select multiple #physicalSelect required>
+          <mat-select  #physicalSelect required>
             <mat-option  *ngFor="let po of physicalPOLs" [value]="po">{{ po.number }}</mat-option>
           </mat-select>
         </mat-form-field>
       </div>  
-      <mat-form-field appearance="standard" [style.width.%]="100">
+      <!-- <mat-form-field appearance="standard" [style.width.%]="100">
         <mat-label>Please choose cancelation reason</mat-label>
         <mat-select
           placeholder="Cancel reason"
@@ -24,7 +24,7 @@
             cReason.description
           }}</mat-option>
         </mat-select>
-      </mat-form-field>
+      </mat-form-field> -->
       <mat-form-field appearance="standard" [style.width.%]="100">
         <mat-label>Add custom comment (Optional)</mat-label>
         <input name="comment" ngModel type="text" matInput #cancelCustom />

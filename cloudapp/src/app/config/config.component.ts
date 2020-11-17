@@ -23,8 +23,8 @@ export interface ConfigElement {
 export class ConfigComponent implements OnInit {
   loading: boolean = false;
   config: Object;
-  electronicTypes: string[];
-  physicalTypes: string[];
+  electronicTypes: any[];
+  physicalTypes: any[];
 
   constructor(
     private configService: CloudAppConfigService,
@@ -43,6 +43,7 @@ export class ConfigComponent implements OnInit {
     this.loading = true;
     forkJoin(startUpObserv).subscribe({
       next: (res: { pTypes; eTypes; config }) => {
+        console.log(res)
         this.physicalTypes = res.pTypes;
         this.electronicTypes = res.eTypes;
         if (Object.keys(res.config).length > 0) {

@@ -12,19 +12,19 @@ export class TypeMapService {
   get getAllTypes(): Observable<string[]> {
     return this.restService
       .call("/conf/code-tables/PurchaseType")
-      .pipe(map((res) => res.row.map((element) => element.code)));
+      .pipe(map((res) => res.row));
   }
   get getPhysicalTypes(): Observable<string[]> {
     return this.getAllTypes.pipe(
-      map((res: string[]) => {
-        return res.filter((element, index, array) => element.startsWith("P"));
+      map((res: any[]) => {
+        return res.filter((element, index, array) => element.code.startsWith("P"));
       })
     );
   }
   get getElectronicTypes(): Observable<string[]> {
     return this.getAllTypes.pipe(
-      map((res: string[]) => {
-        return res.filter((element, index, array) => element.startsWith("E"));
+      map((res: any[]) => {
+        return res.filter((element, index, array) => element.code.startsWith("E"));
       })
     );
   }
