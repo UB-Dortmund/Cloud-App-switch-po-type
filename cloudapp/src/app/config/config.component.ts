@@ -43,7 +43,6 @@ export class ConfigComponent implements OnInit {
     this.loading = true;
     forkJoin(startUpObserv).subscribe({
       next: (res: { pTypes; eTypes; config }) => {
-        console.log(res)
         this.physicalTypes = res.pTypes;
         this.electronicTypes = res.eTypes;
         if (Object.keys(res.config).length > 0) {

@@ -85,18 +85,19 @@ export class MainComponent implements OnInit, OnDestroy {
   };
   switchToElectronic() {
     this.loading = true;
-    let polToProcess: POL.Object[] = [];
+    // let polToProcess: POL.Object[] = [];
     let observables: Observable<any>[] = [];
-    for (let option of this.selectDrop.selected as any[]) {
-      polToProcess.push(option.value);
+    // for (let option of this.selectDrop.selected as any[]) {
+    //   polToProcess.push(option.value);
+    // }
+    let physicalPol = this.selectDrop.value;
+    // for (let physicalPol of polToProcess) {
+    if (physicalPol.status && physicalPol.status.value in Constants.allowedStatuses) {
+      this.toastr.error(`Error : Could not transform ${physicalPol.number} with this status`);
+    } else {
+      physicalPol ? this.physicalToElectronic(physicalPol, observables) : null;
     }
-    for (let physicalPol of polToProcess) {
-      if (physicalPol.status && physicalPol.status.value in Constants.allowedStatuses) {
-        this.toastr.error(`Error : Could not transform ${physicalPol.number} with this status`);
-      } else {
-        physicalPol ? this.physicalToElectronic(physicalPol, observables) : null;
-      }
-    }
+    // }
     if (observables.length > 0) {
       forkJoin(observables).subscribe({
         next: (res) => {
