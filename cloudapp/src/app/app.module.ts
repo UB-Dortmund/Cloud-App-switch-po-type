@@ -2,7 +2,7 @@ import { NgModule } from "@angular/core";
 import { HttpClientModule } from "@angular/common/http";
 import { BrowserModule } from "@angular/platform-browser";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { MaterialModule, getTranslateModule } from "@exlibris/exl-cloudapp-angular-lib";
+import { MaterialModule, getTranslateModule, AlertModule } from "@exlibris/exl-cloudapp-angular-lib";
 import { ToastrModule } from "ngx-toastr";
 import { MatButtonModule } from "@angular/material/button";
 
@@ -23,7 +23,7 @@ export function getToastrModule() {
 
 @NgModule({
   declarations: [AppComponent, MainComponent, HelpComponent, ConfigComponent],
-  imports: [
+  imports: [AlertModule,
     MaterialModule,
     MatSelectModule,
     MatButtonModule,

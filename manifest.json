@@ -1,6 +1,6 @@
 {
    "id": "switch-po-type",
-   "title": "Switch POL type",
+   "title": "Switch PO-Line type",
    "description": "Change an PO Line from Physical to Electronic, or vice versa",
    "author": "Liron Menda",
    "icon": {
@@ -10,5 +10,14 @@
    "pages": {
       "help": "/#/help",
       "config": "/#/config"
+   },
+   "entities": [
+      "PO_LINE"
+   ],
+   "contentSecurity": {
+      "connectSrc": [],
+      "sandbox": {
+         "popups": true
+      }
    }
 }

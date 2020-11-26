@@ -1,5 +1,16 @@
 <div [hidden]="loading">
   <ng-container *ngIf="isPol; else noPOL">
+    <div class="eca-actions">
+              <button
+          mat-stroked-button
+          color="primary"
+          type="button"
+          [disabled]="ifSelected()"
+          (click)="switchToElectronic()"
+        >
+          Transform to Electronic
+        </button>
+    </div>
     <form #form="ngForm">
       <div class="full-width">
         <p>Please select physical POL to transform to electronic POL according to configuration:</p>
@@ -51,23 +62,23 @@
         >
       </div>
       <br />
-      <div class="full-width">
+      <!-- <div class="full-width">
         <button
           mat-stroked-button
           color="primary"
           type="button"
-          [disabled]="ifSelected()"
+          [disabled]="ifSelected()" 
           (click)="switchToElectronic()"
         >
           Transform to Electronic
         </button>
-      </div>
+      </div> -->
     </form>
   </ng-container>
   <ng-template #noPOL>
     <p>Please navigate to page with physical purchase order lines</p>
   </ng-template>
 </div>
-<div class="center" *ngIf="loading" #loading_spinner>
+<div class="loading-shade" *ngIf="loading" #loading_spinner>
   <mat-progress-spinner mode="indeterminate" diameter="50"> </mat-progress-spinner>
 </div>

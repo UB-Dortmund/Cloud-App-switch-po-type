@@ -1,12 +1,10 @@
-import { Route, Router } from "@angular/router";
+import { Router } from "@angular/router";
 import { forkJoin } from "rxjs";
-import { observable } from "rxjs";
 import { Constants } from "./../constants";
 import { TypeMapService } from "./../type-map.service";
-import { ToastrService } from "ngx-toastr";
 import {
+  AlertService,
   CloudAppConfigService,
-  CloudAppRestService,
   RestErrorResponse,
 } from "@exlibris/exl-cloudapp-angular-lib";
 import { Component, OnInit } from "@angular/core";
@@ -28,7 +26,7 @@ export class ConfigComponent implements OnInit {
 
   constructor(
     private configService: CloudAppConfigService,
-    private toastr: ToastrService,
+    private alert: AlertService,
     private typeService: TypeMapService,
     private router: Router
   ) {}
@@ -53,7 +51,7 @@ export class ConfigComponent implements OnInit {
       },
       error: (err) => {
         console.error(err);
-        this.toastr.error("There was an error loading the configuration , please try again");
+        this.alert.error("There was an error loading the configuration , please try again");
         this.loading = false;
       },
       complete: () => (this.loading = false),
@@ -70,11 +68,11 @@ export class ConfigComponent implements OnInit {
       next: () => {},
       error: (err: RestErrorResponse) => {
         this.loading = false;
-        this.toastr.error(`Could not saved configuration, Error : ${err.message}}`);
+        this.alert.error(`Could not saved configuration, Error : ${err.message}}`);
         console.error(err);
       },
       complete: () => {
-        this.toastr.success("Successfully saved settings");
+        this.alert.success("Successfully saved settings",{keepAfterRouteChange:true});
         this.loading = false;
         this.router.navigate([""]);
       },

@@ -7,11 +7,11 @@ import {
   PageInfo,
   HttpMethod,
   CloudAppStoreService,
+  AlertService,
 } from "@exlibris/exl-cloudapp-angular-lib";
 import { Request as ExRequest } from "@exlibris/exl-cloudapp-angular-lib";
 import { EMPTY, forkJoin, Observable, Subscription } from "rxjs";
 import { Constants } from "../constants";
-import { ToastrService } from "ngx-toastr";
 import { NgForm } from "@angular/forms";
 const CANCEL_REASON = "LIBRARY_CANCELLED";
 class StoreSettings {
@@ -34,7 +34,7 @@ export class MainComponent implements OnInit, OnDestroy {
   constructor(
     private eventService: CloudAppEventsService,
     private restService: CloudAppRestService,
-    private toastr: ToastrService,
+    private alert: AlertService,
     private storeService: CloudAppStoreService
   ) {}
   ngOnInit() {
@@ -69,6 +69,7 @@ export class MainComponent implements OnInit, OnDestroy {
       .subscribe(() => console.log("Updated Settings"));
   }
   onPageLoad = (pageInfo: PageInfo) => {
+    console.log("PageLoad",pageInfo);
     if (pageInfo && pageInfo.entities && pageInfo.entities.length > 0) {
       this.loading = true;
       this.physicalPOLs = [];
@@ -85,19 +86,13 @@ export class MainComponent implements OnInit, OnDestroy {
   };
   switchToElectronic() {
     this.loading = true;
-    // let polToProcess: POL.Object[] = [];
     let observables: Observable<any>[] = [];
-    // for (let option of this.selectDrop.selected as any[]) {
-    //   polToProcess.push(option.value);
-    // }
     let physicalPol = this.selectDrop.value;
-    // for (let physicalPol of polToProcess) {
     if (physicalPol.status && physicalPol.status.value in Constants.allowedStatuses) {
-      this.toastr.error(`Error : Could not transform ${physicalPol.number} with this status`);
+      this.alert.error(`Error : Could not transform ${physicalPol.number} with this status`);
     } else {
       physicalPol ? this.physicalToElectronic(physicalPol, observables) : null;
     }
-    // }
     if (observables.length > 0) {
       forkJoin(observables).subscribe({
         next: (res) => {
@@ -105,9 +100,9 @@ export class MainComponent implements OnInit, OnDestroy {
           res = res as { value: POL.Object; oldPol: POL.Object }[];
           for (let result of res) {
             if (result && result.value) {
-              this.toastr.success(
+              this.alert.success(
                 `Successfully created ${result.value.number} ,With type ${result.value.type.desc}`
-              );
+              ,{autoClose:false});
               this.cancelationQueue.push({ value: result.oldPol, oldNum: result.value.number });
             }
           }
@@ -140,7 +135,7 @@ export class MainComponent implements OnInit, OnDestroy {
           return { value, oldPol: physicalPol }; // Returns the oldPol to add cancelation
         }),
         catchError((err) => {
-          this.toastr.error(`Failed to transform .${err.message},${physicalPol.number}`);
+          this.alert.error(`Failed to transform .${err.message},${physicalPol.number}`);
           return EMPTY;
         })
       )
@@ -167,7 +162,7 @@ export class MainComponent implements OnInit, OnDestroy {
         map(() => poItem.value),
         catchError((err) => {
           console.error(err);
-          this.toastr.error(`Failed to cancel. ${err.message},${poItem.value.number}`);
+          this.alert.warn(`Failed to cancel. ${err.message},${poItem.value.number}`);
 
           return EMPTY;
         })
@@ -178,7 +173,7 @@ export class MainComponent implements OnInit, OnDestroy {
       next: (res) => {
         res.forEach((element: POL.Object) => {
           if (element && element.number) {
-            this.toastr.success(`Successfully canceled ${element.number}`);
+            this.alert.success(`Successfully canceled ${element.number}`,{autoClose:false});
           }
         });
       },

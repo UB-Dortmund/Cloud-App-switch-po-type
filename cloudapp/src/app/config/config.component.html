@@ -1,24 +1,22 @@
-<div class="title">
-  <h1>Configuration</h1>
-
+<div class="eca-actions">
   <a [routerLink]="['']">
-    <button mat-raised-button color="primary"><mat-icon>arrow_back</mat-icon>Back</button>
+    <button mat-flat-button color="secondary"><mat-icon>arrow_back</mat-icon>Back</button>
   </a>
+  <button mat-flat-button color="secondary" (click)="onRestoreDef()">Restore Defaults</button>
+  <button mat-flat-button color="primary"  (click)="onSave()">Save</button>
 </div>
+<h1>Configuration</h1>
+
 <ng-container *ngIf="!loading; else loading_spinner">
   <div class="full-width">
     <mat-form-field *ngFor="let pItem of physicalTypes" appearance="standard">
-      <mat-label style="font-weight: bold;">{{ pItem.description }}</mat-label>
+      <mat-label style="font-weight: bold">{{ pItem.description }}</mat-label>
       <mat-select [(ngModel)]="config[pItem.code]">
         <mat-option *ngFor="let eItem of electronicTypes" [value]="eItem.code">{{ eItem.description }}</mat-option>
       </mat-select>
     </mat-form-field>
   </div>
-  <button mat-stroked-button color="primary" style="margin-right: 5px" (click)="onSave()">
-    Save
-  </button>
-  <button mat-stroked-button color="primary" (click)="onRestoreDef()">Restore Defaults</button>
 </ng-container>
-<div class="center" *ngIf="loading" #loading_spinner>
+<div class="loading-shade" *ngIf="loading" #loading_spinner>
   <mat-progress-spinner mode="indeterminate" diameter="50"> </mat-progress-spinner>
 </div>
