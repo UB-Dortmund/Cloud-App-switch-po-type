@@ -28,18 +28,23 @@ export class MainComponent implements OnInit, OnDestroy {
   @ViewChild(NgForm, { static: false }) form: NgForm;
   storeSettings = new StoreSettings();
   pageLoad$: Subscription;
-  loading: boolean = false;
+  isLoading: boolean = false;
   physicalPOLs: POL.Object[];
   cancelationQueue: { value: POL.Object; oldNum: string }[] = [];
+  
   constructor(
     private eventService: CloudAppEventsService,
     private restService: CloudAppRestService,
     private alert: AlertService,
     private storeService: CloudAppStoreService
   ) {}
+
+  get isOnlyOneEntity():boolean {
+    return this.physicalPOLs.length===1||true;
+  }
   ngOnInit() {
     this.pageLoad$ = this.eventService.onPageLoad(this.onPageLoad);
-    this.loading = true;
+    this.isLoading = true;
     this.storeService.get("settings").subscribe({
       next: (res) => {
         if (res && Object.keys(res).length > 0) {
@@ -48,9 +53,9 @@ export class MainComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error(err);
-        this.loading = false;
+        this.isLoading = false;
       },
-      complete: () => (this.loading = false),
+      complete: () => (this.isLoading = false),
     });
   }
   ngOnDestroy() {
@@ -71,7 +76,7 @@ export class MainComponent implements OnInit, OnDestroy {
   onPageLoad = (pageInfo: PageInfo) => {
     console.log("PageLoad",pageInfo);
     if (pageInfo && pageInfo.entities && pageInfo.entities.length > 0) {
-      this.loading = true;
+      this.isLoading = true;
       this.physicalPOLs = [];
       this.cancelationQueue = [];
       for (let entity of pageInfo.entities) {
@@ -79,13 +84,13 @@ export class MainComponent implements OnInit, OnDestroy {
           if (Constants.physicalTypeSet.has(res.type.value)) {
             this.physicalPOLs.push(res);
           }
-          this.loading = false;
+          this.isLoading = false;
         });
       }
     }
   };
   switchToElectronic() {
-    this.loading = true;
+    this.isLoading = true;
     let observables: Observable<any>[] = [];
     let physicalPol = this.selectDrop.value;
     if (physicalPol.status && physicalPol.status.value in Constants.allowedStatuses) {
@@ -101,7 +106,7 @@ export class MainComponent implements OnInit, OnDestroy {
           for (let result of res) {
             if (result && result.value) {
               this.alert.success(
-                `Successfully created ${result.value.number} ,With type ${result.value.type.desc}`
+                `Successfully created POL : ${result.value.number} ,With type ${result.value.type.desc}`
               ,{autoClose:false});
               this.cancelationQueue.push({ value: result.oldPol, oldNum: result.value.number });
             }
@@ -110,7 +115,7 @@ export class MainComponent implements OnInit, OnDestroy {
         },
       });
     } else {
-      this.loading = false;
+      this.isLoading = false;
     }
   }
 
@@ -173,13 +178,13 @@ export class MainComponent implements OnInit, OnDestroy {
       next: (res) => {
         res.forEach((element: POL.Object) => {
           if (element && element.number) {
-            this.alert.success(`Successfully canceled ${element.number}`,{autoClose:false});
+            this.alert.success(`Successfully canceled POL :${element.number}`,{autoClose:false});
           }
         });
       },
       complete: () => {
-        this.loading = false;
-        this.eventService.refreshPage().subscribe(() => null);
+        this.isLoading = false;
+        this.isOnlyOneEntity?this.eventService.back().subscribe(()=>null):this.eventService.refreshPage().subscribe(() => null);
       },
     });
   }

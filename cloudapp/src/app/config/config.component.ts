@@ -32,7 +32,6 @@ export class ConfigComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // this.loading = true;
     let startUpObserv = {
       pTypes: this.typeService.getPhysicalTypes,
       eTypes: this.typeService.getElectronicTypes,

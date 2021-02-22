@@ -1,8 +1,9 @@
 {
    "id": "switch-po-type",
    "title": "Switch PO-Line type",
-   "description": "Change an PO Line from Physical to Electronic, or vice versa",
+   "subtitle": "App that lets you transform physical POL to electronic",
    "author": "Liron Menda",
+   "description": "Change an PO Line from Physical to Electronic, or vice versa",
    "icon": {
       "type": "font",
       "value": "fa fa-arrow-right"
