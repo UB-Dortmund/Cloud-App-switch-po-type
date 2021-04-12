@@ -7,11 +7,8 @@
 </div>
 <h1>Configuration</h1>
 
-<ng-template class="loading-shade" *ngIf="loading" #loading_spinner>
-  <mat-progress-spinner mode="indeterminate" diameter="50"> </mat-progress-spinner>
-</ng-template>
 
-<ng-container *ngIf="!loading; else loading_spinner">
+<ng-container *ngIf="!loading">
   <div class="full-width">
     <mat-form-field *ngFor="let pItem of physicalTypes" appearance="standard">
       <mat-label style="font-weight: bold">{{ pItem.description }}</mat-label>
@@ -22,3 +19,6 @@
   </div>
 </ng-container>
 
+<div class="loading-shade" *ngIf="loading" >
+  <mat-progress-spinner mode="indeterminate" diameter="50"> </mat-progress-spinner>
+</div>
