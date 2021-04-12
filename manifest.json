@@ -3,7 +3,7 @@
    "title": "Switch PO-Line type",
    "subtitle": "App that lets you transform physical POL to electronic",
    "author": "Ex Libris",
-   "description": "Change an PO Line from Physical to Electronic, or vice versa",
+   "description": "Change an PO Line from Physical to Electronic",
    "icon": {
       "type": "font",
       "value": "fa fa-arrow-right"
