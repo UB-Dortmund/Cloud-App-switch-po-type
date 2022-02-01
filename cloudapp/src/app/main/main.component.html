@@ -16,7 +16,7 @@
       <div class="full-width">
         <p style="display:block;">Please select physical POL to transform to electronic POL according to configuration:</p>
         <mat-form-field appearance="standard" >
-          <mat-label>PO line</mat-label>
+          <mat-label>Physical PO line</mat-label>
           <mat-select  #physicalSelect required>
             <mat-option  *ngFor="let po of physicalPOLs" [value]="po">{{ po.number }}</mat-option>
           </mat-select>
