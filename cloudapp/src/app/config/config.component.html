@@ -10,10 +10,21 @@
 
 <ng-container *ngIf="!loading">
   <div class="full-width">
+    <h2>Physical to Electronic</h2>
     <mat-form-field *ngFor="let pItem of physicalTypes" appearance="standard">
       <mat-label style="font-weight: bold">{{ pItem.description }}</mat-label>
       <mat-select [(ngModel)]="config[pItem.code]">
         <mat-option *ngFor="let eItem of electronicTypes" [value]="eItem.code">{{ eItem.description }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+  <br>
+  <div class="full-width">
+    <h2>Electronic to Physical</h2>
+    <mat-form-field *ngFor="let eItem of electronicTypes" appearance="standard">
+      <mat-label style="font-weight: bold">{{ eItem.description }}</mat-label>
+      <mat-select [(ngModel)]="config[eItem.code]">
+        <mat-option *ngFor="let pItem of physicalTypes" [value]="pItem.code">{{ pItem.description }}</mat-option>
       </mat-select>
     </mat-form-field>
   </div>

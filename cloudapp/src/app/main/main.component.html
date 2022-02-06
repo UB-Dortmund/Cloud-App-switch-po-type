@@ -2,23 +2,41 @@
   <ng-container *ngIf="isPol; else noPOL">
     <div class="eca-actions" style="float: right;">
               <button
+          *ngIf="toEelectronicbuttonType"    
           mat-flat-button
           color="primary"
           type="button"
-          [disabled]="ifSelected()"
+          [disabled]="ifPhysicalSelected()"
           (click)="switchToElectronic()"
         >
           Transform to Electronic
+        </button>
+
+        <button
+          *ngIf="!toEelectronicbuttonType"    
+          mat-flat-button
+          color="primary"
+          type="button"
+          [disabled]="ifElectronicSelected()"
+          (click)="switchToPhysical()"
+        >
+          Transform to Physical
         </button>
     </div>
 
     <form #form="ngForm" >
       <div class="full-width">
-        <p style="display:block;">Please select physical POL to transform to electronic POL according to configuration:</p>
+        <p style="display:block;">Please select physical or electronic POL to transform to the other type of POL according to configuration:</p>
         <mat-form-field appearance="standard" >
           <mat-label>Physical PO line</mat-label>
-          <mat-select  #physicalSelect required>
+          <mat-select  #physicalSelect required (selectionChange)=onPhysicalChange()>
             <mat-option  *ngFor="let po of physicalPOLs" [value]="po">{{ po.number }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="standard" >
+          <mat-label>Electronic PO line</mat-label>
+          <mat-select  #electronicSelect required (selectionChange)=onElectronicChange()>
+            <mat-option  *ngFor="let po of electronicPOLs" [value]="po">{{ po.number }}</mat-option>
           </mat-select>
         </mat-form-field>
       </div>  
@@ -77,7 +95,7 @@
     </form>
   </ng-container>
   <ng-template #noPOL>
-    <p>Please navigate to page with physical purchase order lines</p>
+    <p>Please navigate to page with physical or electronic purchase order lines</p>
   </ng-template>
 </div>
 <div class="example-loading-shade" *ngIf="isLoading" #loading_spinner>

@@ -24,13 +24,16 @@ class StoreSettings {
   styleUrls: ["./main.component.scss"],
 })
 export class MainComponent implements OnInit, OnDestroy {
-  @ViewChild(MatSelect, { static: false }) selectDrop: MatSelect;
+  @ViewChild('physicalSelect', { static: false }) physicalSelectDrop: MatSelect;
+  @ViewChild('electronicSelect', { static: false }) electronicSelectDrop: MatSelect;
   @ViewChild(NgForm, { static: false }) form: NgForm;
   storeSettings = new StoreSettings();
   pageLoad$: Subscription;
   isLoading: boolean = false;
   physicalPOLs: POL.Object[];
+  electronicPOLs: POL.Object[];
   cancelationQueue: { value: POL.Object; oldNum: string }[] = [];
+  toEelectronicbuttonType = true;
   
   constructor(
     private eventService: CloudAppEventsService,
@@ -65,7 +68,8 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   get isPol() {
-    return this.physicalPOLs && this.physicalPOLs.length !== 0;
+    return (this.physicalPOLs && this.physicalPOLs.length !== 0)
+    || (this.electronicPOLs && this.electronicPOLs.length !== 0);
   }
 
   onChangeSettings() {
@@ -78,11 +82,15 @@ export class MainComponent implements OnInit, OnDestroy {
     if (pageInfo && pageInfo.entities && pageInfo.entities.length > 0) {
       this.isLoading = true;
       this.physicalPOLs = [];
+      this.electronicPOLs = [];
       this.cancelationQueue = [];
       for (let entity of pageInfo.entities) {
         this.restService.call(entity?.link).subscribe((res: POL.Object) => {
           if (Constants.physicalTypeSet.has(res.type.value)) {
             this.physicalPOLs.push(res);
+          }
+          else if (Constants.electronicTypeSet.has(res.type.value)) {
+            this.electronicPOLs.push(res);
           }
           this.isLoading = false;
         });
@@ -92,11 +100,12 @@ export class MainComponent implements OnInit, OnDestroy {
   switchToElectronic() {
     this.isLoading = true;
     let observables: Observable<any>[] = [];
-    let physicalPol = this.selectDrop.value;
+    let physicalPol = this.physicalSelectDrop.value;
+    
     if (physicalPol.status && physicalPol.status.value in Constants.allowedStatuses) {
       this.alert.error(`Error : Could not transform ${physicalPol.number} with this status`);
     } else {
-      physicalPol ? this.physicalToElectronic(physicalPol, observables) : null;
+      physicalPol ? this.transformPOL(physicalPol, observables) : null;
     }
     if (observables.length > 0) {
       forkJoin(observables).subscribe({
@@ -119,11 +128,45 @@ export class MainComponent implements OnInit, OnDestroy {
     }
   }
 
-  ifSelected = (): boolean =>
-    !(this.selectDrop && this.selectDrop.selected && (this.selectDrop.selected as []).length !== 0);
+  switchToPhysical() {
+    this.isLoading = true;
+    let observables: Observable<any>[] = [];
+    let electronicPol = this.electronicSelectDrop.value;
 
-  private physicalToElectronic(physicalPol: POL.Object, observables: Observable<any>[]) {
-    let newPol: POL.Object = JSON.parse(JSON.stringify(physicalPol)); //Deep Copy
+    if (electronicPol.status && electronicPol.status.value in Constants.allowedStatuses) {
+      this.alert.error(`Error : Could not transform ${electronicPol.number} with this status`);
+    } else {
+      electronicPol ? this.transformPOL(electronicPol, observables) : null;
+    }
+    if (observables.length > 0) {
+      forkJoin(observables).subscribe({
+        next: (res) => {
+          console.log("result from observ", res);
+          res = res as { value: POL.Object; oldPol: POL.Object }[];
+          for (let result of res) {
+            if (result && result.value) {
+              this.alert.success(
+                `Successfully created POL : ${result.value.number} ,With type ${result.value.type.desc}`
+              ,{autoClose:false});
+              this.cancelationQueue.push({ value: result.oldPol, oldNum: result.value.number });
+            }
+          }
+          this.cancelAll();
+        },
+      });
+    } else {
+      this.isLoading = false;
+    }
+  }
+
+  ifPhysicalSelected = (): boolean =>
+    !(this.physicalSelectDrop && this.physicalSelectDrop.selected && (this.physicalSelectDrop.selected as []).length !== 0)
+
+  ifElectronicSelected = (): boolean => 
+    !(this.electronicSelectDrop && this.electronicSelectDrop.selected && (this.electronicSelectDrop.selected as []).length !== 0);
+    
+  private transformPOL(currentPol: POL.Object, observables: Observable<any>[]) {
+    let newPol: POL.Object = JSON.parse(JSON.stringify(currentPol)); //Deep Copy
     console.log(newPol);
     newPol.type.value = Constants.typeMap.get(newPol.type.value);
     newPol.type.desc = null;
@@ -137,10 +180,11 @@ export class MainComponent implements OnInit, OnDestroy {
     observables.push(
       this.restService.call(req).pipe(
         map((value) => {
-          return { value, oldPol: physicalPol }; // Returns the oldPol to add cancelation
+          return { value, oldPol: currentPol }; // Returns the oldPol to add cancelation
         }),
         catchError((err) => {
-          this.alert.error(`Failed to transform .${err.message},${physicalPol.number}`);
+          this.alert.error(`Failed to transform .${err.message},${currentPol.number}`);
+          this.isLoading = false;
           return EMPTY;
         })
       )
@@ -187,5 +231,13 @@ export class MainComponent implements OnInit, OnDestroy {
         this.isOnlyOneEntity?this.eventService.back().subscribe(()=>null):this.eventService.refreshPage().subscribe(() => null);
       },
     });
+  }
+  onPhysicalChange(){
+    this.toEelectronicbuttonType = true;
+    this.electronicSelectDrop.value = null;
+  }
+  onElectronicChange(){
+    this.toEelectronicbuttonType = false;
+    this.physicalSelectDrop.value = null;
   }
 }
