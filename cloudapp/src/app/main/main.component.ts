@@ -26,6 +26,7 @@ class StoreSettings {
 export class MainComponent implements OnInit, OnDestroy {
   @ViewChild('physicalSelect', { static: false }) physicalSelectDrop: MatSelect;
   @ViewChild('electronicSelect', { static: false }) electronicSelectDrop: MatSelect;
+  @ViewChild('ownerSelect', { static: false }) ownerSelectDrop: MatSelect;
   @ViewChild(NgForm, { static: false }) form: NgForm;
   storeSettings = new StoreSettings();
   pageLoad$: Subscription;
@@ -34,6 +35,8 @@ export class MainComponent implements OnInit, OnDestroy {
   electronicPOLs: POL.Object[];
   cancelationQueue: { value: POL.Object; oldNum: string }[] = [];
   toEelectronicbuttonType = true;
+
+  POLowners: [];
   
   constructor(
     private eventService: CloudAppEventsService,
@@ -81,6 +84,21 @@ export class MainComponent implements OnInit, OnDestroy {
     console.log("PageLoad",pageInfo);
     if (pageInfo && pageInfo.entities && pageInfo.entities.length > 0) {
       this.isLoading = true;
+
+
+      this.POLowners = [];
+      this.restService.call("/almaws/v1/conf/libraries").subscribe(res => {
+        console.log(res.library);
+        /*for (let lib of res.library) {
+          console.log(lib);
+        }*/
+        this.POLowners = res.library;
+      });
+
+      //console.log("val:" +this.ownerSelectDrop.value);
+      //console.log("sel:" +this.ownerSelectDrop.selected);
+
+
       this.physicalPOLs = [];
       this.electronicPOLs = [];
       this.cancelationQueue = [];
@@ -171,6 +189,15 @@ export class MainComponent implements OnInit, OnDestroy {
     newPol.type.value = Constants.typeMap.get(newPol.type.value);
     newPol.type.desc = null;
     newPol.number = null;
+
+    if (this.ownerSelectDrop.value) {
+      const newOwner = this.ownerSelectDrop.value;
+      console.log("Setting new Owner:");
+      console.log(newOwner);
+      newPol.owner.value = newOwner.code;
+      newPol.owner.desc = null;
+    }
+
     //Creates observable
     let req: ExRequest = {
       url: "/almaws/v1/acq/po-lines",
@@ -239,5 +266,9 @@ export class MainComponent implements OnInit, OnDestroy {
   onElectronicChange(){
     this.toEelectronicbuttonType = false;
     this.physicalSelectDrop.value = null;
+  }
+  onOwnerChange(){
+    console.log("Selected new Owner:");
+    console.log(this.ownerSelectDrop.value);
   }
 }

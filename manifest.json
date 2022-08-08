@@ -1,9 +1,9 @@
 {
    "id": "switch-po-type",
-   "title": "Switch PO-Line type",
-   "subtitle": "App that lets you transform physical POL to electronic",
+   "title": "Switch PO-Line type & owner",
+   "subtitle": "App that lets you transform physical POL to electronic and vice versa, as well as change the POL owner",
    "author": "Ex Libris",
-   "description": "Change an PO Line from Physical to Electronic",
+   "description": "Change an PO Line from Physical to Electronic and vice versa, as well as change the PO line owner to another library",
    "icon": {
       "type": "font",
       "value": "fa fa-arrow-right"

@@ -39,6 +39,13 @@
             <mat-option  *ngFor="let po of electronicPOLs" [value]="po">{{ po.number }}</mat-option>
           </mat-select>
         </mat-form-field>
+        <p style="display:block;">Optionally, please select a new owner for the POL:</p>
+        <mat-form-field appearance="standard" >
+          <mat-label>New owner</mat-label>
+          <mat-select  #ownerSelect required (selectionChange)=onOwnerChange()>
+            <mat-option  *ngFor="let owner of POLowners" [value]="owner">{{ owner.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
       </div>  
       <!-- <mat-form-field appearance="standard" [style.width.%]="100">
         <mat-label>Please choose cancelation reason</mat-label>
