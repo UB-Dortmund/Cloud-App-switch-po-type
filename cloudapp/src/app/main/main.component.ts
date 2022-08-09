@@ -182,6 +182,13 @@ export class MainComponent implements OnInit, OnDestroy {
 
   ifElectronicSelected = (): boolean => 
     !(this.electronicSelectDrop && this.electronicSelectDrop.selected && (this.electronicSelectDrop.selected as []).length !== 0);
+
+  ifOwnerSelected = (): boolean =>
+    !(this.ownerSelectDrop && this.ownerSelectDrop.selected && (this.ownerSelectDrop.selected as []).length !== 0);
+
+  clearOwner() {
+    this.ownerSelectDrop.value = null;
+  }
     
   private transformPOL(currentPol: POL.Object, observables: Observable<any>[]) {
     let newPol: POL.Object = JSON.parse(JSON.stringify(currentPol)); //Deep Copy

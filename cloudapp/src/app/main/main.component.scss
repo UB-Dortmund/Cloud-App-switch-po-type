@@ -57,6 +57,14 @@ table {
 div.full-width > * {
   width: 100%;
 }
+
+.left {
+  width: 80% !important;
+}
+.right {
+  width: 20% !important;
+}
+
 .center {
   position: absolute;
   top: 50%;

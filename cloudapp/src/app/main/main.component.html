@@ -40,13 +40,22 @@
           </mat-select>
         </mat-form-field>
         <p style="display:block;">Optionally, please select a new owner for the POL:</p>
-        <mat-form-field appearance="standard" >
+        <mat-form-field appearance="standard" class="left">
           <mat-label>New owner</mat-label>
           <mat-select  #ownerSelect required (selectionChange)=onOwnerChange()>
             <mat-option  *ngFor="let owner of POLowners" [value]="owner">{{ owner.name }}</mat-option>
           </mat-select>
         </mat-form-field>
-      </div>  
+        <button class="right"
+                mat-flat-button
+                color="primary"
+                type="button"
+                [disabled]="ifOwnerSelected()"
+                (click)="clearOwner()"
+        >
+          Clear
+        </button>
+      </div>
       <!-- <mat-form-field appearance="standard" [style.width.%]="100">
         <mat-label>Please choose cancelation reason</mat-label>
         <mat-select
